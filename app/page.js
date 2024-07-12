@@ -1,112 +1,249 @@
-import Image from "next/image";
+'use client';
+import MainForm from '@/components/MainForm';
+import pdfMake from 'pdfmake/build/pdfmake';
+// import pdfFonts from 'pdfmake/build/vfs_fonts';
+import ImageUploading from 'react-images-uploading';
+import { Button } from '@/components/ui/button';
+import ExportData from '@/components/ExportData';
+import { Titles } from '@/constants/definitions';
+import { useState } from 'react';
+import Image from 'next/image';
+import { Separator } from '@/components/ui/separator';
+import { Translations } from '@/constants/definitions';
+
+// pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 export default function Home() {
+  const [getLanguage, setGetLanguage] = useState('ja');
+  const [images, setImages] = useState([]);
+  const [getTitle, setGetTitle] = useState('');
+  const [getStage, setGetStage] = useState('');
+  const [getVersion, setGetVersion] = useState('');
+  const [getTechnology, setGetTechnology] = useState('');
+  const [startDate, setStartDate] = useState();
+  const [completionDate, setCompletionDate] = useState();
+  const [getFunctional, setGetFunctional] = useState('');
+  const [getNonFunctional, setGetNonFunctional] = useState('');
+  const [getDescription, setGetDescription] = useState('');
+
+  const maxNumber = 4;
+
+  // Accessing the text directly using the language and ID
+  const buttonUpload = Translations[getLanguage].find(
+    (item) => item.id === 'click_or_drop'
+  ).text;
+  const buttonRemove = Translations[getLanguage].find(
+    (item) => item.id === 'remove_images'
+  ).text;
+  const exportText = Translations[getLanguage].find(
+    (item) => item.id === 'export_to_pdf'
+  ).text;
+  const downloadText = Translations[getLanguage].find(
+    (item) => item.id === 'download_pdf'
+  ).text;
+  const stageText = Translations[getLanguage].find(
+    (item) => item.id === 'stage'
+  ).text;
+  const startDateText = Translations[getLanguage].find(
+    (item) => item.id === 'start_date'
+  ).text;
+  const completionDateText = Translations[getLanguage].find(
+    (item) => item.id === 'completion'
+  ).text;
+  const versionNumberText = Translations[getLanguage].find(
+    (item) => item.id === 'version_number'
+  ).text;
+  const technologyText = Translations[getLanguage].find(
+    (item) => item.id === 'technology'
+  ).text;
+  const overviewText = Translations[getLanguage].find(
+    (item) => item.id === 'overview'
+  ).text;
+  const functionalText = Translations[getLanguage].find(
+    (item) => item.id === 'functional_requirements'
+  ).text;
+  const nonfunctionalText = Translations[getLanguage].find(
+    (item) => item.id === 'non_functional_requirements'
+  ).text;
+
+  const onChange = (imageList) => {
+    setImages(imageList);
+  };
+
+  const styles = {
+    header: {
+      fontSize: 18,
+      bold: true,
+      margin: [15, 0, 15, 0],
+      font: 'NotoSans',
+    },
+    subheader: {
+      fontSize: 14,
+      font: 'NotoSans',
+    },
+    japaneseText: { font: 'NotoSans' }, // Style for Japanese text
+  };
+
+  // Define the fonts you want to use
+  var fonts = {
+    Roboto: {
+      normal: 'Roboto-Regular.ttf',
+      bold: 'Roboto-Medium.ttf',
+      italics: 'Roboto-Italic.ttf',
+      bolditalics: 'Roboto-MediumItalic.ttf',
+    },
+    // Example for Japanese font
+    NotoSans: {
+      normal: 'NotoSansJP-Regular.ttf',
+      bold: 'NotoSansJP-Bold.ttf',
+      medium: 'NotoSansJP-Medium.ttf',
+    },
+  };
+
+  // Set pdfMake fonts
+  pdfMake.fonts = fonts;
+
+  const exportToPDF = async () => {
+    const content = [
+      { text: `${Titles[getLanguage]}`, style: `${styles.header}` },
+      { text: `${getTitle}`, style: `${styles.subheader}` },
+      {
+        width: 'auto',
+        table: {
+          body: [
+            [
+              `${stageText}`,
+              `${getStage}`,
+              `${versionNumberText}`,
+              `${getVersion}`,
+            ],
+            [
+              `${startDateText}`,
+              `${startDate}`,
+              `${completionDateText}`,
+              `${completionDate}`,
+            ],
+          ],
+          alignment: 'center',
+        },
+      },
+      { text: `${overviewText}`, style: `${styles.subheader}` },
+      `${getDescription}`,
+      { text: `${functionalText}`, style: `${styles.subheader}` },
+      `${getFunctional}`,
+      { text: `${nonfunctionalText}`, style: `${styles.subheader}` },
+      `${getNonFunctional}`,
+      {
+        table: {
+          body: [[`${technologyText}`, `${getTechnology}`]],
+          alignment: 'center',
+        },
+      },
+      { text: 'Images:', style: `${styles.header}` },
+    ];
+
+    if (images.length > 0) {
+      const imagePromises = images.map(async (image) => {
+        try {
+          const dataUrl = await getImageDataUrl(image);
+          return dataUrl;
+        } catch (error) {
+          console.error('Failed to convert image to data URL:', error);
+          return null;
+        }
+      });
+
+      const resolvedImages = await Promise.all(imagePromises);
+
+      resolvedImages.forEach((dataUrl) => {
+        if (dataUrl) {
+          content.push({
+            image: dataUrl,
+            width: 200, // Adjust width as needed
+            height: 200, // Adjust height as needed
+          });
+        }
+      });
+    }
+
+    const pdfDoc = { content };
+
+    pdfMake.createPdf(pdfDoc).download('data.pdf');
+  };
+
+  const getImageDataUrl = async (image) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(image.file);
+    });
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.js</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+    <main className='flex min-h-screen flex-col items-center p-24'>
+      <h2 className='font-semibold text-3xl'>{Titles[getLanguage]}</h2>
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+      <MainForm
+        setGetLanguage={setGetLanguage}
+        getLanguage={getLanguage}
+        setGetTitle={setGetTitle}
+        setGetStage={setGetStage}
+        setGetVersion={setGetVersion}
+        setGetTechnology={setGetTechnology}
+        setStartDate={setStartDate}
+        setCompletionDate={setCompletionDate}
+        setGetFunctional={setGetFunctional}
+        setGetNonFunctional={setGetNonFunctional}
+        setGetDescription={setGetDescription}
+        getDescription={getDescription}
+      />
+      <ImageUploading
+        multiple
+        value={images}
+        onChange={onChange}
+        maxNumber={maxNumber}
+        dataURLKey='data_url'
+        acceptType={['jpg', 'jpeg', 'png']}
+      >
+        {({
+          imageList,
+          onImageUpload,
+          onImageRemoveAll,
+          isDragging,
+          dragProps,
+        }) => (
+          // write your building UI
+          <div className='upload__image-wrapper'>
+            <div className='flex justify-center my-8'>
+              <Button
+                style={isDragging ? { color: 'red' } : null}
+                onClick={onImageUpload}
+                {...dragProps}
+                className='mr-8'
+              >
+                {buttonUpload}
+              </Button>
+              <Button onClick={onImageRemoveAll}>{buttonRemove}</Button>
+            </div>
+            <div className='flex flex-row'>
+              {imageList.map((image, index) => (
+                <div key={index} className='image-item'>
+                  <Image src={image.data_url} alt='' width={200} height={200} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </ImageUploading>
+      <Separator className='my-8' />
+      <div>
+        <ExportData
+          exportToPDF={exportToPDF}
+          exportText={exportText}
+          downloadText={downloadText}
         />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800 hover:dark:bg-opacity-30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+        {/* Other content of your page */}
       </div>
     </main>
   );
