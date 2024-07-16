@@ -1,7 +1,7 @@
 'use client';
 import MainForm from '@/components/MainForm';
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 import pdfMake from 'pdfmake/build/pdfmake';
-// import pdfFonts from 'pdfmake/build/vfs_fonts';
 import ImageUploading from 'react-images-uploading';
 import { Button } from '@/components/ui/button';
 import ExportData from '@/components/ExportData';
@@ -11,7 +11,26 @@ import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 import { Translations } from '@/constants/definitions';
 
-// pdfMake.vfs = pdfFonts.pdfMake.vfs;
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
+
+// Define the fonts you want to use
+var fonts = {
+  Roboto: {
+    normal: 'Roboto-Regular.ttf',
+    bold: 'Roboto-Medium.ttf',
+    italics: 'Roboto-Italic.ttf',
+    bolditalics: 'Roboto-MediumItalic.ttf',
+  },
+  // Example for Japanese font
+  NotoSans: {
+    normal: 'app/NotoSansJP-Regular.ttf',
+    bold: 'app/NotoSansJP-Bold.ttf',
+    medium: 'app/NotoSansJP-Medium.ttf',
+  },
+};
+
+// Set pdfMake fonts
+pdfMake.fonts = fonts;
 
 export default function Home() {
   const [getLanguage, setGetLanguage] = useState('ja');
@@ -70,78 +89,73 @@ export default function Home() {
     setImages(imageList);
   };
 
-  const styles = {
-    header: {
-      fontSize: 18,
-      bold: true,
-      margin: [15, 0, 15, 0],
-      font: 'NotoSans',
-    },
-    subheader: {
-      fontSize: 14,
-      font: 'NotoSans',
-    },
-    japaneseText: { font: 'NotoSans' }, // Style for Japanese text
-  };
-
-  // Define the fonts you want to use
-  var fonts = {
-    Roboto: {
-      normal: 'Roboto-Regular.ttf',
-      bold: 'Roboto-Medium.ttf',
-      italics: 'Roboto-Italic.ttf',
-      bolditalics: 'Roboto-MediumItalic.ttf',
-    },
-    // Example for Japanese font
-    NotoSans: {
-      normal: 'NotoSansJP-Regular.ttf',
-      bold: 'NotoSansJP-Bold.ttf',
-      medium: 'NotoSansJP-Medium.ttf',
-    },
-  };
-
-  // Set pdfMake fonts
-  pdfMake.fonts = fonts;
-
   const exportToPDF = async () => {
+    // Define content using styles directly
     const content = [
-      { text: `${Titles[getLanguage]}`, style: `${styles.header}` },
-      { text: `${getTitle}`, style: `${styles.subheader}` },
       {
-        width: 'auto',
+        text: Titles[getLanguage],
+        fontSize: 18,
+        bold: true,
+        alignment: 'center',
+        margin: [0, 20, 0, 20],
+      },
+      {
+        text: getTitle,
+        fontSize: 16,
+        bold: true,
+        alignment: 'center',
+        margin: [0, 20, 0, 20],
+      },
+      {
+        width: '100%',
         table: {
           body: [
-            [
-              `${stageText}`,
-              `${getStage}`,
-              `${versionNumberText}`,
-              `${getVersion}`,
-            ],
-            [
-              `${startDateText}`,
-              `${startDate}`,
-              `${completionDateText}`,
-              `${completionDate}`,
-            ],
+            [stageText, getStage, versionNumberText, getVersion],
+            [startDateText, startDate, completionDateText, completionDate],
           ],
           alignment: 'center',
+          margin: [0, 20, 0, 20],
         },
       },
-      { text: `${overviewText}`, style: `${styles.subheader}` },
-      `${getDescription}`,
-      { text: `${functionalText}`, style: `${styles.subheader}` },
-      `${getFunctional}`,
-      { text: `${nonfunctionalText}`, style: `${styles.subheader}` },
-      `${getNonFunctional}`,
       {
+        text: overviewText,
+        fontSize: 16,
+        bold: true,
+        margin: [0, 20, 0, 20],
+      },
+      getDescription,
+      {
+        text: functionalText,
+        fontSize: 16,
+        bold: true,
+        margin: [0, 20, 0, 20],
+      },
+      getFunctional,
+      {
+        text: nonfunctionalText,
+        fontSize: 16,
+        bold: true,
+        margin: [0, 20, 0, 20],
+      },
+      getNonFunctional,
+      {
+        text: '',
+        fontSize: 16,
+        bold: true,
+        margin: [0, 20, 0, 20],
+      },
+      {
+        width: '100%',
         table: {
-          body: [[`${technologyText}`, `${getTechnology}`]],
+          body: [[technologyText, getTechnology]],
           alignment: 'center',
+          margin: [0, 20, 0, 20],
         },
       },
-      { text: 'Images:', style: `${styles.header}` },
+      { text: 'Images:', fontSize: 18, bold: true, alignment: 'center' },
     ];
 
+    // Handle images
     if (images.length > 0) {
       const imagePromises = images.map(async (image) => {
         try {
@@ -166,8 +180,10 @@ export default function Home() {
       });
     }
 
+    // Create PDF document
     const pdfDoc = { content };
 
+    // Generate and download PDF
     pdfMake.createPdf(pdfDoc).download('data.pdf');
   };
 
